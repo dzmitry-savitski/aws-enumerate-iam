@@ -126,7 +126,7 @@ def get_client(access_key, secret_key, session_token, service_name, region):
 
     config = Config(connect_timeout=5,
                     read_timeout=5,
-                    retries={'max_attempts': 30},
+                    retries={'max_attempts': 3},
                     max_pool_connections=MAX_POOL_CONNECTIONS * 2)
 
     try:
@@ -158,10 +158,10 @@ def check_one_permission(arg_tuple):
 
     try:
         action_function = getattr(service_client, operation_name)
-    except AttributeError:
+    except Exception:
         # The service might not have this action (this is most likely
         # an error with generate_bruteforce_tests.py)
-        logger.error('Remove %s.%s action' % (service_name, operation_name))
+        # logger.error('Remove %s.%s action' % (service_name, operation_name))
         return
 
     logger.debug('Testing %s.%s() in region %s' % (service_name, operation_name, region))
@@ -173,8 +173,8 @@ def check_one_permission(arg_tuple):
             botocore.exceptions.ConnectTimeoutError,
             botocore.exceptions.ReadTimeoutError):
         return
-    except botocore.exceptions.ParamValidationError:
-        logger.error('Remove %s.%s action' % (service_name, operation_name))
+    except Exception:
+        # logger.error('Remove %s.%s action' % (service_name, operation_name))
         return
 
     msg = '-- %s.%s() worked!'
@@ -228,11 +228,16 @@ def enumerate_using_iam(access_key, secret_key, session_token, region):
 
     # Connect to the IAM API and start testing.
     logger.info('Starting permission enumeration for access-key-id "%s"', access_key)
+    config = Config(connect_timeout=5,
+                    read_timeout=5,
+                    retries={'max_attempts': 3},
+                    max_pool_connections=MAX_POOL_CONNECTIONS * 2)
     iam_client = boto3.client(
         'iam',
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
-        aws_session_token=session_token
+        aws_session_token=session_token,
+        config=config
     )
 
     # Try for the kitchen sink.
